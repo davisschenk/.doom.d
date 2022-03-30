@@ -1,0 +1,323 @@
+#+TITLE: Doom Org Config!
+#+PROPERTY: :tangle yes :results silent
+* Prelude
+* Config
+** General
+*** Name
+#+begin_src emacs-lisp :tangle yes
+(setq user-full-name "Davis Schenkenberger"
+      user-mail-address "davisschenk@gmail.com")
+#+end_src
+
+#+RESULTS:
+: davisschenk@gmail.com
+
+*** Theme
+#+begin_src emacs-lisp :tangle yes
+(setq doom-theme 'doom-one)
+(setq display-line-numbers-type 'relative)
+#+end_src
+
+#+RESULTS:
+: relative
+
+** Org Mode
+*** Org Directory
+#+begin_src emacs-lisp :tangle yes
+(setq org-directory "~/Documents/Notes")
+#+end_src
+
+#+RESULTS:
+: ~/Documents/Notes
+
+*** Org Agenda Files
+#+begin_src emacs-lisp :tangle yes
+(defun org-get-agenda-files-recursively (dir)
+  "Get org agenda files from root DIR."
+  (directory-files-recursively dir "\.org$"))
+
+(defun org-set-agenda-files-recursively (dir)
+  "Set org-agenda files from root DIR."
+  (setq org-agenda-files (org-get-agenda-files-recursively dir)))
+
+(defun org-add-agenda-files-recursively (dir)
+  "Add org-agenda files from root DIR."
+  (nconc org-agenda-files (org-get-agenda-files-recursively dir)))
+
+(org-set-agenda-files-recursively "~/Documents/EmacsNotes")
+(org-add-agenda-files-recursively "~/Documents/braindump")
+(org-add-agenda-files-recursively "~/Documents/Notes")
+#+end_src
+
+#+RESULTS:
+| ~/Documents/EmacsNotes/Archive.org | ~/Documents/EmacsNotes/Notes.org | ~/Documents/EmacsNotes/Tasks.org | ~/Documents/braindump/org/main/test.org | ~/Documents/Notes/notes/personal/mead.org | ~/Documents/Notes/notes/school/fall_2021/2021-history_171.org | ~/Documents/Notes/notes/school/fall_2021/index.org | ~/Documents/Notes/notes/school/spring_2022/2022-cs_253.org | ~/Documents/Notes/notes/school/spring_2022/2022-gr_111.org | ~/Documents/Notes/notes/school/spring_2022/2022-jtc_300.org | ~/Documents/Notes/notes/school/spring_2022/2022-math_156.org | ~/Documents/Notes/notes/school/spring_2022/2022-soc_220.org | ~/Documents/Notes/notes/school/spring_2022/index.org | ~/Documents/Notes/notes/work/lord.org | ~/Documents/Notes/notes/archive.org | ~/Documents/Notes/notes/example.org | ~/Documents/Notes/notes/index.org | ~/Documents/Notes/notes/template.org | ~/Documents/Notes/papers/spring_2022/jtc300-proposal-memo.org | ~/Documents/Notes/papers/spring_2022/jtc300_citation_worksheet.org | ~/Documents/Notes/papers/spring_2022/jtc300_industry_analysis.org | ~/Documents/Notes/papers/spring_2022/jtc300_multiculuralism.org | ~/Documents/Notes/papers/spring_2022/math156-unit1.org | ~/Documents/Notes/papers/spring_2022/mla_style_template.org | ~/Documents/Notes/papers/spring_2022/soc220_se1_greenhouse_gasses.org | ~/Documents/Notes/roam/main/cardinality.org | ~/Documents/Notes/roam/main/cartesian_product.org | ~/Documents/Notes/roam/main/complement.org | ~/Documents/Notes/roam/main/composition.org | ~/Documents/Notes/roam/main/converse.org | ~/Documents/Notes/roam/main/domain.org | ~/Documents/Notes/roam/main/function.org | ~/Documents/Notes/roam/main/power_set.org | ~/Documents/Notes/roam/main/range.org | ~/Documents/Notes/roam/main/relation.org | ~/Documents/Notes/roam/main/set.org | ~/Documents/Notes/roam/main/tuple.org | ~/Documents/Notes/index.org |
+
+*** Org Src Block Attr Wrap
+#+begin_src emacs-lisp :tangle yes
+(defun my/org-strip-results (data)
+  (replace-regexp-in-string ":\\(RESULTS\\|END\\):\n" "" data))
+
+(defun my/org-caption-wrap (data &optional name caption attrs strip-drawer src-wrap)
+  (let* ((data-s (if (and strip-drawer (not (string-empty-p strip-drawer)))
+                     (my/org-strip-results data)
+                   data))
+         (drawer-start (if (string-match-p "^:RESULTS:.*" data-s) 10 0)))
+    (concat
+     (substring data-s 0 drawer-start)
+     (and name (not (string-empty-p name)) (concat "#+NAME:" name "\n"))
+     (and caption (not (string-empty-p caption)) (concat "#+CAPTION:" caption "\n"))
+     (and attrs (not (string-empty-p attrs)) (concat "#+ATTR_LATEX:" attrs "\n"))
+     (if (and src-wrap (not (string-empty-p src-wrap)))
+         (concat "#+begin_src " src-wrap "\n"
+                 (substring data-s drawer-start)
+                 (when (not (string-match-p ".*\n" data-s)) "\n")
+                 "#+end_src")
+       (substring data-s drawer-start)))))
+#+end_src
+
+#+RESULTS:
+: my/org-caption-wrap
+
+*** Org Ignore Tag
+#+begin_src emacs-lisp :tangle yes
+(require 'ox-extra)
+(ox-extras-activate '(-header-blocks ignore-headlines))
+#+end_src
+
+#+RESULTS:
+
+*** Some More Keybindings!
+#+begin_src emacs-lisp :tangle yes
+(after! org
+  (map! :map org-mode-map :leader
+        "t x" #'org-latex-preview
+        "t e" #'org-toggle-pretty-entities))
+#+end_src
+
+#+RESULTS:
+: org-toggle-pretty-entities
+
+*** Latex
+**** Org Latex Classes
+***** Cheatsheet
+#+name: cheatsheet-latex
+#+begin_src latex
+\\documentclass[10pt,landscape]{article}
+\\usepackage{amssymb,amsmath,amsthm,amsfonts}
+\\usepackage{multicol,multirow}
+\\usepackage{calc}
+\\usepackage{ifthen}
+\\usepackage[landscape]{geometry}
+\\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue]{hyperref}
+
+
+\\ifthenelse{\\lengthtest { \\paperwidth = 11in}}
+{ \\geometry{top=.5in,left=.5in,right=.5in,bottom=.5in} }
+{\\ifthenelse{ \\lengthtest{ \\paperwidth = 297mm}}
+	{\\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+	{\\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+}
+\\pagestyle{empty}
+\\makeatletter
+\\renewcommand{\\section}{\\@startsection{section}{1}{0mm}%
+	{-1ex plus -.5ex minus -.2ex}%
+	{0.5ex plus .2ex}%x
+	{\\normalfont\\large\\bfseries}}
+\\renewcommand{\\subsection}{\\@startsection{subsection}{2}{0mm}%
+	{-1explus -.5ex minus -.2ex}%
+	{0.5ex plus .2ex}%
+	{\\normalfont\\normalsize\\bfseries}}
+\\renewcommand{\\subsubsection}{\\@startsection{subsubsection}{3}{0mm}%
+	{-1ex plus -.5ex minus -.2ex}%
+	{1ex plus .2ex}%
+	{\\normalfont\\small\\bfseries}}
+\\makeatother
+\\setcounter{secnumdepth}{0}
+\\setlength{\\parindent}{0pt}
+#+end_src
+
+#+RESULTS: cheatsheet-latex
+#+begin_example
+\\documentclass[10pt,landscape]{article}
+\\usepackage{amssymb,amsmath,amsthm,amsfonts}
+\\usepackage{multicol,multirow}
+\\usepackage{calc}
+\\usepackage{ifthen}
+\\usepackage[landscape]{geometry}
+\\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue]{hyperref}
+
+
+\\ifthenelse{\\lengthtest { \\paperwidth = 11in}}
+{ \\geometry{top=.5in,left=.5in,right=.5in,bottom=.5in} }
+{\\ifthenelse{ \\lengthtest{ \\paperwidth = 297mm}}
+	{\\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+	{\\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+}
+\\pagestyle{empty}
+\\makeatletter
+\\renewcommand{\\section}{\\@startsection{section}{1}{0mm}%
+	{-1ex plus -.5ex minus -.2ex}%
+	{0.5ex plus .2ex}%x
+	{\\normalfont\\large\\bfseries}}
+\\renewcommand{\\subsection}{\\@startsection{subsection}{2}{0mm}%
+	{-1explus -.5ex minus -.2ex}%
+	{0.5ex plus .2ex}%
+	{\\normalfont\\normalsize\\bfseries}}
+\\renewcommand{\\subsubsection}{\\@startsection{subsubsection}{3}{0mm}%
+	{-1ex plus -.5ex minus -.2ex}%
+	{1ex plus .2ex}%
+	{\\normalfont\\small\\bfseries}}
+\\makeatother
+\\setcounter{secnumdepth}{0}
+\\setlength{\\parindent}{0pt}
+#+end_example
+
+#+begin_src emacs-lisp :tangle yes :noweb yes
+    (after! ox-latex
+      (add-to-list 'org-latex-classes '("cheatsheet" "\\documentclass[10pt,landscape]{article}
+\\usepackage{amssymb,amsmath,amsthm,amsfonts}
+\\usepackage{multicol,multirow}
+\\usepackage{calc}
+\\usepackage{ifthen}
+\\usepackage[landscape]{geometry}
+\\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue]{hyperref}
+
+
+\\ifthenelse{\\lengthtest { \\paperwidth = 11in}}
+{ \\geometry{top=.5in,left=.5in,right=.5in,bottom=.5in} }
+{\\ifthenelse{ \\lengthtest{ \\paperwidth = 297mm}}
+	{\\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+	{\\geometry{top=1cm,left=1cm,right=1cm,bottom=1cm} }
+}
+\\pagestyle{empty}
+\\makeatletter
+\\renewcommand{\\section}{\\@startsection{section}{1}{0mm}%
+	{-1ex plus -.5ex minus -.2ex}%
+	{0.5ex plus .2ex}%x
+	{\\normalfont\\large\\bfseries}}
+\\renewcommand{\\subsection}{\\@startsection{subsection}{2}{0mm}%
+	{-1explus -.5ex minus -.2ex}%
+	{0.5ex plus .2ex}%
+	{\\normalfont\\normalsize\\bfseries}}
+\\renewcommand{\\subsubsection}{\\@startsection{subsubsection}{3}{0mm}%
+	{-1ex plus -.5ex minus -.2ex}%
+	{1ex plus .2ex}%
+	{\\normalfont\\small\\bfseries}}
+\\makeatother
+\\setcounter{secnumdepth}{0}
+\\setlength{\\parindent}{0pt}"
+                                        ("\\section{%s}" . "\\section*{%s}")
+                                        ("\\subsection{%s}" . "\\subsection*{%s}")
+                                        ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                                        ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                                        ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+#+end_src
+
+#+RESULTS:
+| memo |
+
+***** Memo
+#+begin_src emacs-lisp :tangle yes :noweb yes
+    (after! ox-latex
+      (add-to-list 'org-latex-classes '("memo" "
+\\documentclass[a4paper,12pt]{texMemo}
+\\usepackage[english]{babel}
+\\usepackage{graphicx, blindtext}"
+                                        ("\\section{%s}" . "\\section*{%s}")
+                                        ("\\subsection{%s}" . "\\subsection*{%s}")
+                                        ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                                        ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                                        ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+#+end_src
+
+#+RESULTS:
+| memo |
+
+**** Latex Preview Scale
+#+begin_src emacs-lisp :tangle yes
+(after! org (plist-put org-format-latex-options :scale 3.0))
+#+end_src
+
+#+RESULTS:
+| :foreground | default | :background | default | :scale | 3.0 | :html-foreground | Black | :html-background | Transparent | :html-scale | 1.0 | :matchers | (begin $1 $ $$ \( \[) |
+
+*** Org Roam UI
+#+begin_src emacs-lisp :tangle yes
+(use-package! websocket
+  :after org-roam)
+
+(use-package! org-roam-ui
+  :after org-roam ;; or :after org
+  ;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+  ;;         a hookable mode anymore, you're advised to pick something yourself
+  ;;         if you don't care about startup time, use
+  ;;  :hook (after-init . org-roam-ui-mode)
+  :config
+  (setq org-roam-ui-sync-theme t
+        org-roam-ui-follow t
+        org-roam-ui-update-on-save t
+        org-roam-ui-open-on-start t))
+#+end_src
+
+#+RESULTS:
+: t
+
+*** Org Roam Config
+#+begin_src emacs-lisp :tangle yes
+(after! org-roam
+  (setq org-roam-v2-ack t)
+  (setq org-roam-mode-sections
+        (list #'org-roam-backlinks-insert-section
+              #'org-roam-reflinks-insert-section
+              #'org-roam-unlinked-references-insert-section)))
+#+end_src
+
+#+RESULTS:
+| org-roam-backlinks-insert-section | org-roam-reflinks-insert-section | org-roam-unlinked-references-insert-section |
+
+*** Org Roam Template
+#+begin_src emacs-lisp :tangle yes
+(setq org-roam-capture-templates
+      '(("m" "main" plain "%?" :if-new (file+head "main/${slug}.org" "#+title: ${title}\n")
+         ("r" "reference" plain "%?" :if-new (file+head "reference/${title}.org" "#+title: ${title}\n"):immediate-finish t :unnarrowed t))))
+#+end_src
+
+#+RESULTS:
+| m | main | plain | %? | :if-new | (file+head main/${slug}.org #+title: ${title} |
+
+*** Start Server
+#+begin_src emacs-lisp :tangle yes
+(server-start)
+#+end_src
+
+#+RESULTS:
+
+*** Deft
+#+begin_src emacs-lisp :tangle yes
+(after! deft
+  (setq deft-recursive t)
+  (setq deft-directory "~/Documents/Notes")
+  )
+#+end_src
+
+#+RESULTS:
+
+** Evil
+*** Visual Line Mode
+#+begin_src emacs-lisp :tangle yes
+(setq evil-respect-visual-line-mode t)
+#+end_src
+
+#+RESULTS:
+: t
+
+** Projectile
+*** Project Search Path
+#+begin_src emacs-lisp :tangle yes
+(setq projectile-project-search-path '(("~/Developer" . 3)
+                                       ("~/Documents" . 1)))
+(projectile-add-known-project "/ssh:davis13@denver.cs.colostate.edu:~/cs253")
+#+end_src
+
+#+RESULTS:
+| /ssh:davis13@denver.cs.colostate.edu:~/cs253/ | ~/Documents/Notes/ | ~/.emacs.d/ | ~/Developer/Personal/rasp-leds-v2/ | ~/Developer/Personal/scripts/ | ~/Developer/scripts/ | ~/Developer/Personal/spotify-songs-with-larry/ | ~/Documents/resume/ | ~/Developer/Personal/rasp-leds/ | ~/Developer/School/Drones/ardupilot/ | ~/.doom.d/ | ~/Developer/Personal/rasp_led_bloc/android/ | ~/Developer/Personal/lordserial/ | ~/.cargo/registry/src/github.com-1ecc6299db9ec823/desert-2.0.0/ | ~/Developer/Personal/nom-lord/ | ~/Developer/Personal/project-euler-rust/ | ~/Developer/dotfiles/ | ~/Developer/Tools/ttybus/ | ~/Developer/Tools/rspotify/ | ~/Developer/Tools/org-cv/ | ~/Developer/School/cs370/CS370-Project-Server/ | ~/Developer/School/cs370/CS370-Project-Client/ | ~/Developer/School/Drones/old/ | ~/Developer/School/Drones/lordserial/ | ~/Developer/School/Drones/lordlogger/ | ~/Developer/School/Drones/lordcli/ | ~/Developer/Personal/testing/ | ~/Developer/Personal/rgb-strip-controller/ | ~/Developer/Personal/graphics-test/ | ~/Developer/Personal/aoc-2021/ | ~/Developer/Personal/ant-test/ | ~/Developer/Personal/Garmin-Data/ | ~/.cargo/registry/src/github.com-1ecc6299db9ec823/rspotify-model-0.11.3/ |
